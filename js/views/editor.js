@@ -2,7 +2,7 @@
 
 import { store } from '../store.js';
 import { icons, topBar, go, el } from '../ui.js';
-import { longDate, timeLabel, sanitizeRich, esc } from '../util.js';
+import { longDate, timeLabel, sanitizeRich, esc, fileToResizedDataURL } from '../util.js';
 import { fetchContext, weatherEmoji } from '../weather.js';
 import { speechSupported, isIOS, startDictation } from '../speech.js';
 
@@ -16,6 +16,7 @@ export async function render(params) {
   let inputMethod = existing?.inputMethod || (params.input === 'voice' ? 'voice' : 'keyboard');
   let location = existing?.location || null;
   let weather = existing?.weather || null;
+  let image = existing?.image || null;
   const createdAt = existing?.createdAt || new Date().toISOString();
 
   const root = el('<div class="view editor"></div>');
@@ -81,6 +82,41 @@ export async function render(params) {
     document.execCommand(b.dataset.cmd, false);
   });
 
+  // --- Photo ---
+  const photoRow = el(`
+    <div class="photo-row">
+      <label class="photo-btn">📷 <span>Add photo</span>
+        <input type="file" accept="image/*" hidden data-photo />
+      </label>
+      <div class="photo-preview" data-preview></div>
+    </div>`);
+  const preview = photoRow.querySelector('[data-preview]');
+  const photoInput = photoRow.querySelector('[data-photo]');
+  const captionText = () => photoRow.querySelector('.photo-btn span');
+
+  function renderPreview() {
+    preview.innerHTML = image
+      ? `<div class="photo-thumb"><img src="${image}" alt="Attached photo"/><button type="button" class="photo-remove" data-remove aria-label="Remove photo">✕</button></div>`
+      : '';
+    captionText().textContent = image ? 'Replace photo' : 'Add photo';
+    const rm = preview.querySelector('[data-remove]');
+    if (rm) rm.addEventListener('click', () => { image = null; renderPreview(); });
+  }
+  photoInput.addEventListener('change', async () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+    captionText().textContent = 'Processing…';
+    try {
+      image = await fileToResizedDataURL(file, 1024, 0.7);
+    } catch (e) {
+      alert('Could not add that image: ' + e.message);
+    }
+    photoInput.value = '';
+    renderPreview();
+  });
+  renderPreview();
+  main.appendChild(photoRow);
+
   // --- Voice control ---
   const voiceRow = el(`<div class="voice-row"></div>`);
   main.appendChild(voiceRow);
@@ -97,8 +133,9 @@ export async function render(params) {
       inputMethod,
       location,
       weather,
+      image,
     };
-    if (!payload.headline && !payload.body.trim()) {
+    if (!payload.headline && !payload.body.trim() && !image) {
       headline.focus();
       headline.classList.add('shake');
       setTimeout(() => headline.classList.remove('shake'), 500);
@@ -109,8 +146,9 @@ export async function render(params) {
         await store.update(existing.id, payload);
         go(`#/entry/${existing.id}`);
       } else {
-        const saved = await store.add({ ...payload, createdAt });
-        go(`#/entry/${saved.id}`);
+        // A freshly captured entry returns the user to the homepage.
+        await store.add({ ...payload, createdAt });
+        go('#/home');
       }
     } catch (err) {
       alert('Could not save: ' + err.message);

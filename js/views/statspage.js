@@ -101,6 +101,20 @@ export async function render() {
     main.appendChild(mc);
   }
 
+  // --- Entries per day (supports multiple entries in one day) ---
+  const perDayCard = el(`
+    <section class="card">
+      <h3>Entries per day</h3>
+      <p class="stat-line"><strong>${s.avgPerActiveDay}</strong> entries on an average active day.</p>
+      <p class="stat-line"><strong>${s.multiEntryDays}</strong> day${s.multiEntryDays === 1 ? '' : 's'} with more than one entry.</p>
+      <p class="stat-line">Most in a single day: <strong>${s.maxPerDay}</strong>${s.busiestDay ? ` on ${esc(shortDate(parseDayKey(s.busiestDay)))}` : ''}.</p>
+    </section>`);
+  if (s.busiestDay && s.maxPerDay > 1) {
+    const busiestEntries = entries.filter((e) => e.day === s.busiestDay);
+    perDayCard.appendChild(el(`<a class="btn-ghost sm daylink" href="#/day/${s.busiestDay}">Open that day (${busiestEntries.length}) ›</a>`));
+  }
+  main.appendChild(perDayCard);
+
   // --- Interesting stat 2: favourite day + avg memory length ---
   main.appendChild(el(`
     <section class="card">

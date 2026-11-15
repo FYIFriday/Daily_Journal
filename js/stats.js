@@ -10,9 +10,18 @@ export function compute(entries) {
   const voice = entries.filter((e) => e.inputMethod === 'voice').length;
   const keyboard = entries.length - voice;
 
-  // Streaks are based on days with ANY entry.
-  const days = new Set(entries.map((e) => e.day));
+  // Entries-per-day distribution (supports multiple entries in one day).
+  const perDay = new Map();
+  entries.forEach((e) => perDay.set(e.day, (perDay.get(e.day) || 0) + 1));
+  const days = new Set(perDay.keys());
   const { current, longest } = streaks(days);
+
+  let maxPerDay = 0, busiestDay = null, multiEntryDays = 0;
+  for (const [day, count] of perDay) {
+    if (count > maxPerDay) { maxPerDay = count; busiestDay = day; }
+    if (count > 1) multiEntryDays++;
+  }
+  const avgPerActiveDay = days.size ? Math.round((entries.length / days.size) * 10) / 10 : 0;
 
   // Day-of-week distribution.
   const dow = Array(7).fill(0);
@@ -47,6 +56,7 @@ export function compute(entries) {
     avgMemory,
     topMonth, topMonthCount,
     uniqueDays: days.size,
+    maxPerDay, busiestDay, multiEntryDays, avgPerActiveDay,
   };
 }
 
