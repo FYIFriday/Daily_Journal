@@ -14,11 +14,17 @@ you connect Firebase.
   a random throwback card at the bottom.
 - **New entry** — memory by default, a discrete toggle switches to lesson.
   Auto date·time·location label, best-effort weather, headline + rich body
-  (bold / italic / underline / emoji).
+  (bold / italic / underline / emoji), and an optional **photo** (camera or
+  library on phone). Saving a new entry returns you to the home screen.
+- **Photos** — images are downscaled to ~1024px JPEG before saving so they stay
+  small (local storage is capped at ~5MB; Firestore docs at ~1MB). For large
+  photo libraries, connect Firebase sync.
 - **Existing entries** — re-read, **add date-stamped notes**, and edit the entry
   or a note via the ✏️ pencil (edits are not timestamped; new notes always are).
-- **Stats** — calendars, spoken-vs-typed, day-of-week, busiest month, streaks and
-  more. Every section can be "dived into" to tap **DD Mmm** links to the entries.
+- **Stats** — calendars, spoken-vs-typed, day-of-week, busiest month, streaks,
+  and **entries-per-day** (average per active day, days with more than one entry,
+  most in a single day). Every section can be "dived into" to tap **DD Mmm** links
+  to the entries.
 - **Menu** — past memories, random memory, past lessons, random lesson, home,
   settings.
 

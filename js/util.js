@@ -99,6 +99,29 @@ export function sanitizeRich(html = '') {
   return tmp.innerHTML;
 }
 
+// Read an image File, downscale it, and return a compact JPEG data URL.
+// Keeps entries well under Firestore's ~1MB/doc limit and localStorage quota.
+export function fileToResizedDataURL(file, maxDim = 1024, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) return reject(new Error('Not an image'));
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+      else if (height >= width && height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      try { resolve(canvas.toDataURL('image/jpeg', quality)); }
+      catch (e) { reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
+    img.src = url;
+  });
+}
+
 export function debounce(fn, ms = 300) {
   let t;
   return (...args) => {

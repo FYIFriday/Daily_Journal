@@ -32,6 +32,7 @@ export async function render(params) {
       <div class="er-kind"><span class="dot dot-${kind}"></span>${kind === 'lesson' ? 'Lesson' : 'Memory'} · ${esc(entry.inputMethod === 'voice' ? 'spoken' : 'typed')}</div>
       <h2 class="er-headline">${esc(entry.headline || 'Untitled')}</h2>
       <div class="er-meta">${esc(longDate(entry.createdAt))} · ${esc(timeLabel(entry.createdAt))}${env.length ? ' · ' + env.join(' · ') : ''}</div>
+      ${entry.image ? `<img class="er-image" src="${entry.image}" alt="Entry photo"/>` : ''}
       <article class="er-body">${sanitizeRich(entry.body) || '<em class="muted">No body.</em>'}</article>
     </main>`);
 

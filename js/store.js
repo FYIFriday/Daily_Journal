@@ -41,6 +41,7 @@ function normalize(e) {
     inputMethod: e.inputMethod === 'voice' ? 'voice' : 'keyboard',
     location: e.location || null,
     weather: e.weather || null,
+    image: e.image || null,
     notes: Array.isArray(e.notes) ? e.notes : [],
     updatedAt: e.updatedAt || e.createdAt || new Date().toISOString(),
   };
@@ -57,7 +58,18 @@ const localBackend = {
     try { return JSON.parse(localStorage.getItem(LS_ENTRIES) || '[]'); }
     catch { return []; }
   },
-  _write(list) { localStorage.setItem(LS_ENTRIES, JSON.stringify(list)); },
+  _write(list) {
+    try {
+      localStorage.setItem(LS_ENTRIES, JSON.stringify(list));
+    } catch (e) {
+      // Quota exceeded (likely too many/large photos). The previous value is
+      // left untouched, so no entries are lost — surface a clear message.
+      if (e && (e.name === 'QuotaExceededError' || e.code === 22)) {
+        throw new Error('This device’s storage is full — connect Firebase sync or remove a photo to save. Nothing was lost.');
+      }
+      throw e;
+    }
+  },
   async init() {},
   async all() { return sortDesc(this._read().map(normalize)); },
   async get(id) { return this._read().map(normalize).find((e) => e.id === id) || null; },
