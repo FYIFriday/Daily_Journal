@@ -12,6 +12,7 @@ import * as browse from './views/browse.js';
 import * as day from './views/day.js';
 import * as statspage from './views/statspage.js';
 import * as settings from './views/settings.js';
+import * as login from './views/login.js';
 
 const app = document.getElementById('app');
 
@@ -27,6 +28,14 @@ async function route() {
   const { parts, params } = parseHash();
   const [a, b, c] = parts;
   let node;
+
+  // Cloud sync configured but not signed in → force the login screen.
+  if (store.needsAuth() && !store.isSignedIn()) {
+    app.innerHTML = '';
+    app.appendChild(await login.render());
+    window.scrollTo(0, 0);
+    return;
+  }
 
   try {
     if (!a || a === 'home') node = await home.render();
@@ -78,7 +87,11 @@ async function boot() {
   // Re-render on live data pushes from other devices (Firebase only). With local
   // storage we always navigate explicitly, so a change-triggered re-render would
   // just be redundant work right before the hash change.
-  if (store.backendName() === 'firebase') store.onChange(() => route());
+  if (store.backendName() === 'firebase') {
+    store.onChange(() => route());
+    // Re-route when the user signs in or out so the login gate updates live.
+    store.onAuthChange(() => route());
+  }
   window.addEventListener('hashchange', route);
 
   // Show splash on a fresh load, then route to home.

@@ -18,6 +18,7 @@ export async function render() {
       <p class="stat-line">Status:
         <strong class="${backend === 'firebase' ? 'ok' : 'warn'}">${backend === 'firebase' ? 'Firebase (synced across devices)' : 'On this device only (localStorage)'}</strong>
       </p>
+      ${backend === 'firebase' && store.isSignedIn() ? `<p class="stat-line sm">Signed in as <strong>${store.currentEmail() || 'your account'}</strong> <button class="btn-ghost sm" data-signout>Sign out</button></p>` : ''}
       ${store.initError() ? `<p class="warn sm">Firebase failed to start: ${store.initError().message}. Using local storage.</p>` : ''}
       ${backend === 'firebase' && store.readError() ? `<p class="warn sm">Cloud is connected but access is <strong>denied</strong> (${store.readError().code || 'permissions'}). Publish the Firestore rules from the README, and enable Anonymous sign-in. Until then new entries won’t save.</p>` : ''}
       <p class="muted sm">Paste your Firebase web-app config below to sync your journal between phone and desktop. See the README for the 5-minute setup.</p>
@@ -58,6 +59,11 @@ export async function render() {
     if (!confirm('Disconnect cloud sync? Entries already in the cloud stay there; this device will switch back to local storage.')) return;
     firebaseConfigStore.set(null);
     location.reload();
+  });
+  const signoutBtn = sync.querySelector('[data-signout]');
+  if (signoutBtn) signoutBtn.addEventListener('click', async () => {
+    await store.signOut();
+    location.hash = '#/home';
   });
   main.appendChild(sync);
 

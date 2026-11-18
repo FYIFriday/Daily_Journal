@@ -339,6 +339,31 @@ a.cal-cell:active { outline: 2px solid var(--accent); }
 }
 .cfg-msg { font-size: .82rem; color: var(--text-dim); margin-top: .5rem; min-height: 1em; }
 
+/* ---------------- Login ---------------- */
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: calc(1.5rem + var(--safe-top)) 1.1rem calc(1.5rem + var(--safe-bottom));
+}
+.login-card {
+  width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.5rem 1.3rem;
+  display: flex; flex-direction: column; gap: .7rem;
+}
+.login-brand { font-size: 1.4rem; font-weight: 700; text-align: center; }
+.login-sub { font-size: .86rem; color: var(--text-dim); text-align: center; margin: 0 0 .4rem; line-height: 1.45; }
+.login-label { display: flex; flex-direction: column; gap: .3rem; font-size: .78rem; color: var(--text-dim); font-weight: 600; }
+.login-input {
+  font-size: 1rem; padding: .7rem .8rem; border: 1px solid var(--border); border-radius: 11px;
+  background: var(--surface-2); color: var(--text); outline: none;
+}
+.login-input:focus { border-color: var(--accent); }
+.login-actions { display: flex; gap: .6rem; margin-top: .5rem; }
+.login-actions .btn-primary { flex: 1; }
+.login-actions .btn-ghost { flex: 1; }
+.login-msg { font-size: .84rem; color: var(--text-dim); min-height: 1.1em; margin: .3rem 0 0; text-align: center; }
+.login-msg.warn { color: var(--danger); }
+.login-local { background: none; border: none; color: var(--text-dim); font-size: .8rem; text-decoration: underline; padding: .5rem; margin-top: .3rem; }
+
 /* ---------------- Drawer menu ---------------- */
 .drawer-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.4); opacity: 0; transition: opacity .25s; }
 .drawer-overlay.open { opacity: 1; }
