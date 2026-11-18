@@ -93,6 +93,10 @@ This keeps each anonymous user's entries private to that signed-in session.
   device. Always keep a backup before clearing browser data.
 - Local entries live in `localStorage`; clearing site data erases them (cloud
   copies, if connected, remain).
+- **iOS warning:** Safari deletes a web app's local storage after ~7 days of not
+  opening it. **Until you connect Firebase, your entries are not safe** — the
+  home screen shows a warning banner whenever storage is local-only. Set up cloud
+  sync (above) and/or export a backup regularly.
 
 ## Tech
 
