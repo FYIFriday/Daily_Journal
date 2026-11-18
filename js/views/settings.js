@@ -19,6 +19,7 @@ export async function render() {
         <strong class="${backend === 'firebase' ? 'ok' : 'warn'}">${backend === 'firebase' ? 'Firebase (synced across devices)' : 'On this device only (localStorage)'}</strong>
       </p>
       ${store.initError() ? `<p class="warn sm">Firebase failed to start: ${store.initError().message}. Using local storage.</p>` : ''}
+      ${backend === 'firebase' && store.readError() ? `<p class="warn sm">Cloud is connected but access is <strong>denied</strong> (${store.readError().code || 'permissions'}). Publish the Firestore rules from the README, and enable Anonymous sign-in. Until then new entries won’t save.</p>` : ''}
       <p class="muted sm">Paste your Firebase web-app config below to sync your journal between phone and desktop. See the README for the 5-minute setup.</p>
       <textarea class="config-input" rows="8" placeholder='{\n  "apiKey": "…",\n  "authDomain": "…",\n  "projectId": "…",\n  "appId": "…"\n}'>${cfg ? JSON.stringify(cfg, null, 2) : ''}</textarea>
       <div class="btn-row">
@@ -59,6 +60,36 @@ export async function render() {
     location.reload();
   });
   main.appendChild(sync);
+
+  // --- Recover local entries into the cloud ---
+  // When you connect Firebase, the app starts reading the (empty) cloud, so
+  // entries saved on this device before connecting seem to vanish. They're still
+  // in local storage — this uploads them to the cloud so they reappear.
+  const localCount = store.localEntryCount();
+  if (backend === 'firebase' && localCount > 0) {
+    const recover = el(`
+      <section class="card">
+        <h3>Recover this device's entries</h3>
+        <p class="stat-line">Found <strong>${localCount}</strong> entr${localCount === 1 ? 'y' : 'ies'} saved on this device before cloud sync was connected.</p>
+        <p class="muted sm">Upload them to the cloud so they show up again and sync across devices. Safe to run more than once — it won't create duplicates.</p>
+        <div class="btn-row"><button class="btn-primary" data-migrate>Upload ${localCount} to cloud</button></div>
+        <p class="cfg-msg" data-migrate-msg></p>
+      </section>`);
+    const mmsg = recover.querySelector('[data-migrate-msg]');
+    recover.querySelector('[data-migrate]').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true; mmsg.textContent = 'Uploading…';
+      try {
+        const n = await store.migrateLocalToCloud();
+        mmsg.textContent = `Uploaded ${n}. Your entries are back — opening the home screen…`;
+        setTimeout(() => { location.hash = '#/home'; }, 900);
+      } catch (err) {
+        btn.disabled = false;
+        mmsg.textContent = 'Upload failed: ' + err.message + (err.code ? ` (${err.code})` : '') + '. Fix the Firestore rules first.';
+      }
+    });
+    main.appendChild(recover);
+  }
 
   // --- Export / import ---
   const data = el(`

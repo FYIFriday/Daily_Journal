@@ -100,7 +100,7 @@ const localBackend = {
 // Loaded lazily via CDN ES modules so there's no build step and no cost when
 // unused. Uses anonymous auth + a per-user Firestore collection.
 function makeFirebaseBackend(config) {
-  let db, col, cache = [], ready;
+  let db, col, cache = [], ready, snapshotError = null;
 
   async function load() {
     const appMod = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
@@ -120,7 +120,13 @@ function makeFirebaseBackend(config) {
     col = fsMod.collection(db, 'users', uidVal, 'entries');
     // Live subscription keeps the local cache fresh across devices.
     fsMod.onSnapshot(col, (snap) => {
+      snapshotError = null;
       cache = sortDesc(snap.docs.map((d) => normalize({ id: d.id, ...d.data() })));
+      emit();
+    }, (err) => {
+      // Most often "Missing or insufficient permissions" → Firestore rules.
+      snapshotError = err;
+      console.error('Firestore read denied:', err);
       emit();
     });
     return fsMod;
@@ -130,6 +136,7 @@ function makeFirebaseBackend(config) {
     name: 'firebase',
     _fs: null,
     async init() { ready = load(); this._fs = await ready; },
+    readError() { return snapshotError; },
     async all() { return cache; },
     async get(id) {
       const hit = cache.find((e) => e.id === id);
@@ -204,6 +211,24 @@ export const store = {
   },
   backendName() { return backend.name; },
   initError() { return initError; },
+  // Read error from the live cloud subscription (usually a rules problem).
+  readError() { return backend.readError ? backend.readError() : null; },
+  // Entries still sitting in this device's localStorage, regardless of the
+  // active backend — used to recover/migrate after connecting the cloud.
+  localEntries() {
+    try { return JSON.parse(localStorage.getItem(LS_ENTRIES) || '[]'); }
+    catch { return []; }
+  },
+  localEntryCount() { return this.localEntries().length; },
+  // Upload this device's local entries to the cloud. Idempotent: each entry is
+  // written under its existing id, so re-running overwrites rather than dupes.
+  async migrateLocalToCloud() {
+    if (backend.name !== 'firebase') throw new Error('Connect cloud sync first.');
+    const raw = this.localEntries();
+    let n = 0;
+    for (const e of raw) { await backend.add(normalize(e)); n++; }
+    return n;
+  },
   all() { return backend.all(); },
   get(id) { return backend.get(id); },
   add(entry) { return backend.add(entry); },
