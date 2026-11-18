@@ -15,6 +15,22 @@ export async function render() {
 
   const main = el('<main class="container"></main>');
 
+  // --- Backup warning: local-only storage can be wiped by the browser ---
+  if (store.backendName() === 'local') {
+    const failed = store.initError();
+    const banner = el(`
+      <a class="backup-warn" href="#/settings">
+        <span class="bw-ico">⚠️</span>
+        <span class="bw-text">
+          <strong>${failed ? 'Cloud sync isn’t connecting' : 'Your journal isn’t backed up'}</strong>
+          ${failed
+            ? 'It fell back to this device only. Tap to fix your Firebase settings.'
+            : 'Entries are saved only on this device and can be erased by your browser (iOS clears it after ~7 days unused). Tap to turn on cloud sync.'}
+        </span>
+      </a>`);
+    main.appendChild(banner);
+  }
+
   // --- New Entry panel (unlabeled) ---
   const panel = el(`
     <section class="new-entry-panel" aria-label="New entry">
