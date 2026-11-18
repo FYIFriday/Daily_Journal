@@ -56,16 +56,27 @@ Chrome / desktop Chrome the mic button *does* live-transcribe automatically.
 
 ## Cloud sync (phone ⇄ desktop) — 5-minute Firebase setup
 
-The app works immediately on local storage. To share entries across devices:
+The app works immediately on local storage. To share entries across devices you
+sign in with **one email + password account**, and use that *same account* on
+every device — that shared login is what makes the journal sync.
 
 1. Go to <https://console.firebase.google.com> and **Add project** (free Spark plan).
-2. In the project, **Build → Firestore Database → Create database** (start in
-   production mode is fine; rules below lock it to each anonymous user).
-3. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable**.
+2. In the project, **Build → Firestore Database → Create database** (production
+   mode is fine; the rules below lock it to your account).
+3. **Build → Authentication → Get started → Sign-in method → Email/Password →
+   Enable** (just the first toggle; "Email link" isn't needed).
 4. **Project settings (gear) → Your apps → Web (`</>`)** → register an app. Copy
-   the `firebaseConfig` object it shows you.
-5. In the journal, open **☰ Menu → Settings → Cloud sync**, paste the config,
-   and tap **Save & connect**. Do this on each device with the *same* config.
+   **only** the `firebaseConfig` object (ignore the `npm install` line — this app
+   loads Firebase from a CDN, no install needed).
+5. In the journal, open **☰ Menu → Settings → Cloud sync**, paste the config, and
+   tap **Save & connect**. Do this on each device with the *same* config.
+6. A sign-in screen appears. On the first device tap **Create account** (any email
+   + a password of 6+ characters). On every other device, enter the **same email
+   and password** and tap **Sign in**. That's it — entries now sync both ways.
+
+> Moving entries you saved *before* signing in: they're still in that device's
+> local storage. After signing in, open **Settings → "Recover this device's
+> entries" → Upload to cloud** and they'll upload to your account and sync.
 
 ### Recommended Firestore security rules
 
@@ -82,15 +93,16 @@ service cloud.firestore {
 }
 ```
 
-Click **Publish**. This keeps each anonymous user's entries private to that
-signed-in session.
+Click **Publish**. This keeps each account's entries private to that account —
+only someone signed in as you can read them.
 
 > The `/{document=**}` recursive wildcard matters: Firestore rules do **not**
 > cascade into subcollections automatically. Matching only `/users/{uid}` (or
 > `/users/{uid}/entries/{doc}` without the wildcard) is the usual cause of a
 > "Missing or insufficient permissions" error when saving. Also make sure
-> **Authentication → Sign-in method → Anonymous** is **enabled**, and that you're
-> not sitting on expired "test mode" rules (those deny everything after 30 days).
+> **Authentication → Sign-in method → Email/Password** is **enabled**, and that
+> you're not sitting on expired "test mode" rules (those deny everything after
+> 30 days).
 
 > Note: the Firebase web config isn't a secret (it's safe in client code), but the
 > rules above are what actually protect your data.
