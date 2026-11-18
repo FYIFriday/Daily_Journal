@@ -75,14 +75,22 @@ In **Firestore → Rules**, use:
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/entries/{doc} {
+    match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
   }
 }
 ```
 
-This keeps each anonymous user's entries private to that signed-in session.
+Click **Publish**. This keeps each anonymous user's entries private to that
+signed-in session.
+
+> The `/{document=**}` recursive wildcard matters: Firestore rules do **not**
+> cascade into subcollections automatically. Matching only `/users/{uid}` (or
+> `/users/{uid}/entries/{doc}` without the wildcard) is the usual cause of a
+> "Missing or insufficient permissions" error when saving. Also make sure
+> **Authentication → Sign-in method → Anonymous** is **enabled**, and that you're
+> not sitting on expired "test mode" rules (those deny everything after 30 days).
 
 > Note: the Firebase web config isn't a secret (it's safe in client code), but the
 > rules above are what actually protect your data.
